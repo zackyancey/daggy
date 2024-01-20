@@ -13,6 +13,7 @@ use petgraph::visit::{
     NodeCompactIndexable, NodeCount, NodeIndexable, Visitable,
 };
 use petgraph::IntoWeightedEdge;
+use petgraph::graph::Frozen;
 use std::marker::PhantomData;
 use std::ops::{Index, IndexMut};
 
@@ -525,6 +526,24 @@ where
     /// Remove the node at the given index from the `StableDag` and return it if it exists.
     pub fn remove_node(&mut self, node: NodeIndex<Ix>) -> Option<N> {
         self.graph.remove_node(node)
+    }
+
+    /// Keep all nodes that return `true` from the `visit` closure,
+    /// remove the others.
+    ///
+    /// `visit` is provided a proxy reference to the graph, so that
+    /// the graph can be walked and associated data modified.
+    ///
+    /// The order nodes are visited is not specified.
+    ///
+    /// The node indices of the removed nodes are invalidated, but none other.
+    /// Edge indices are invalidated as they would be following the removal of
+    /// each edge with an endpoint in a removed node.
+    pub fn retain_nodes<F>(&mut self, visit: F)
+    where
+        F: FnMut(Frozen<StableDiGraph<N, E, Ix>>, NodeIndex<Ix>) -> bool,
+    {
+        self.graph.retain_nodes(visit);
     }
 
     /// Whether or not the graph contains a node for the given index.
